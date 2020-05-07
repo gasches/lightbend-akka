@@ -12,6 +12,10 @@
     </parent>
     <artifactId>exercises</artifactId>
 
+    <properties>
+        <mainClass>com.lightbend.training.coffeehouse.CoffeeHouseApp</mainClass>
+    </properties>
+
     <dependencies>
         <dependency>
             <groupId>${project.groupId}</groupId>
@@ -84,8 +88,13 @@
                 <groupId>org.codehaus.mojo</groupId>
                 <artifactId>exec-maven-plugin</artifactId>
                 <configuration>
-                    <mainClass>com.lightbend.training.coffeehouse.CoffeeHouseApp</mainClass>
                     <skip>false</skip>
+                    <arguments>
+                        <argument>-classpath</argument>
+                        <classpath />
+                        <argument>-javaagent:${project.build.directory}/dependency/cinnamon-agent.jar</argument>
+                        <argument>${mainClass}</argument>
+                    </arguments>
                 </configuration>
             </plugin>
         </plugins>

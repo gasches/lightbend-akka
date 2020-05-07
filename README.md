@@ -25,5 +25,5 @@ Add to `~/.m2/settings.xml`:
 Run:
 
 ```bash
-./mvnw -Plightbend package -pl exercises -am exec:java
+./mvnw -Plightbend package -DskipTests -pl exercises -am exec:exec
 ```

@@ -141,19 +141,10 @@
                     <groupId>org.codehaus.mojo</groupId>
                     <artifactId>exec-maven-plugin</artifactId>
                     <version>1.6.0</version>
-                    <executions>
-                        <execution>
-                            <goals>
-                                <goal>java</goal>
-                            </goals>
-                        </execution>
-                    </executions>
                     <configuration>
+                        <executable>${env.JAVA_HOME}/bin/java</executable>
                         <mainClass>none</mainClass>
                         <skip>true</skip>
-                        <arguments>
-                            <argument>-javaagent:${project.build.directory}/dependency/cinnamon-agent.jar</argument>
-                        </arguments>
                     </configuration>
                 </plugin>
             </plugins>
