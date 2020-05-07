@@ -32,20 +32,24 @@
             <artifactId>akka-slf4j_${akka.binary}</artifactId>
         </dependency>
         <dependency>
+            <groupId>com.lightbend.akka</groupId>
+            <artifactId>akka-diagnostics_${akka.binary}</artifactId>
+        </dependency>
+        <dependency>
             <groupId>com.lightbend.cinnamon</groupId>
             <artifactId>cinnamon-akka_${akka.binary}</artifactId>
         </dependency>
         <dependency>
             <groupId>com.lightbend.cinnamon</groupId>
-            <artifactId>cinnamon-jvm-metrics-producer_${akka.binary}</artifactId>
+            <artifactId>cinnamon-jvm-metrics-producer</artifactId>
         </dependency>
         <dependency>
             <groupId>com.lightbend.cinnamon</groupId>
-            <artifactId>cinnamon-prometheus_${akka.binary}</artifactId>
+            <artifactId>cinnamon-prometheus</artifactId>
         </dependency>
         <dependency>
             <groupId>com.lightbend.cinnamon</groupId>
-            <artifactId>cinnamon-prometheus-httpserver_${akka.binary}</artifactId>
+            <artifactId>cinnamon-prometheus-httpserver</artifactId>
         </dependency>
         <dependency>
             <groupId>ch.qos.logback</groupId>

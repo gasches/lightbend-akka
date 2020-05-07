@@ -16,7 +16,7 @@
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <akka.version>2.6.5</akka.version>
-        <akka.binary>2.12</akka.binary>
+        <akka.binary>2.13</akka.binary>
         <cinnamon.version>2.13.5</cinnamon.version>
         <jdk.version>11</jdk.version>
         <lombok.version>1.18.12</lombok.version>
@@ -41,24 +41,29 @@
                 <version>${akka.version}</version>
             </dependency>
             <dependency>
+                <groupId>com.lightbend.akka</groupId>
+                <artifactId>akka-diagnostics_${akka.binary}</artifactId>
+                <version>1.1.12</version>
+            </dependency>
+            <dependency>
                 <groupId>com.lightbend.cinnamon</groupId>
                 <artifactId>cinnamon-akka_${akka.binary}</artifactId>
                 <version>${cinnamon.version}</version>
             </dependency>
             <dependency>
                 <groupId>com.lightbend.cinnamon</groupId>
-                <artifactId>cinnamon-jvm-metrics-producer_${akka.binary}</artifactId>
-                <version>2.10.9</version>
+                <artifactId>cinnamon-jvm-metrics-producer</artifactId>
+                <version>${cinnamon.version}</version>
             </dependency>
             <dependency>
                 <groupId>com.lightbend.cinnamon</groupId>
-                <artifactId>cinnamon-prometheus_${akka.binary}</artifactId>
-                <version>2.10.9</version>
+                <artifactId>cinnamon-prometheus</artifactId>
+                <version>${cinnamon.version}</version>
             </dependency>
             <dependency>
                 <groupId>com.lightbend.cinnamon</groupId>
-                <artifactId>cinnamon-prometheus-httpserver_${akka.binary}</artifactId>
-                <version>2.10.9</version>
+                <artifactId>cinnamon-prometheus-httpserver</artifactId>
+                <version>${cinnamon.version}</version>
             </dependency>
             <dependency>
                 <groupId>ch.qos.logback</groupId>
