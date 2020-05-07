@@ -27,3 +27,5 @@ nbdist/
 ### Node.js
 node_modules/
 node/
+
+*.log
