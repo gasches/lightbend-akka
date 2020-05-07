@@ -24,7 +24,11 @@ public class CoffeeHouseApp implements Runnable {
         applySystemProperties(opts);
         String name = opts.getOrDefault("name", "coffee-house");
         ActorSystem system = ActorSystem.create(name);
-        new CoffeeHouseApp(system, ActorSystem::deadLetters).run();
+        new CoffeeHouseApp(system, CoffeeHouseApp::createCoffeeHouse).run();
+    }
+
+    static ActorRef createCoffeeHouse(ActorSystem system) {
+        return system.actorOf(CoffeeHouse.props(), "coffee-house");
     }
 
     static Map<String, String> argsToOpts(String[] args) {
