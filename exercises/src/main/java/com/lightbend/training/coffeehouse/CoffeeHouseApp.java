@@ -10,8 +10,10 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
+import akka.actor.AbstractLoggingActor;
 import akka.actor.ActorRef;
 import akka.actor.ActorSystem;
+import akka.actor.Props;
 import akka.event.Logging;
 import akka.event.LoggingAdapter;
 import lombok.SneakyThrows;
@@ -27,10 +29,6 @@ public class CoffeeHouseApp implements Runnable {
         new CoffeeHouseApp(system, CoffeeHouseApp::createCoffeeHouse).run();
     }
 
-    static ActorRef createCoffeeHouse(ActorSystem system) {
-        return system.actorOf(CoffeeHouse.props(), "coffee-house");
-    }
-
     static Map<String, String> argsToOpts(String[] args) {
         return Arrays.stream(args).map(OPT_PATTERN::matcher).filter(Matcher::matches)
                 .collect(Collectors.toMap(m -> m.group(1), m -> m.group(2)));
@@ -44,6 +42,10 @@ public class CoffeeHouseApp implements Runnable {
         });
     }
 
+    static ActorRef createCoffeeHouse(ActorSystem system) {
+        return system.actorOf(CoffeeHouse.props(), "coffee-house");
+    }
+
     private final ActorSystem system;
     private final LoggingAdapter log;
     private final ActorRef coffeeHouse;
@@ -52,8 +54,7 @@ public class CoffeeHouseApp implements Runnable {
         this.system = system;
         this.log = Logging.getLogger(system, getClass().getName());
         this.coffeeHouse = coffeeHouseCreator.apply(system);
-
-        coffeeHouse.tell("Brew Coffee", ActorRef.noSender());
+        system.actorOf(Props.create(AnonymousActor.class, () -> new AnonymousActor(coffeeHouse)));
     }
 
     @Override
@@ -87,5 +88,17 @@ public class CoffeeHouseApp implements Runnable {
     }
 
     protected void status() {
+    }
+
+    public static class AnonymousActor extends AbstractLoggingActor {
+
+        public AnonymousActor(ActorRef coffeeHouse) {
+            coffeeHouse.tell("Brew Coffee", self());
+        }
+
+        @Override
+        public Receive createReceive() {
+            return receiveBuilder().matchAny(msg -> log().info(msg.toString())).build();
+        }
     }
 }

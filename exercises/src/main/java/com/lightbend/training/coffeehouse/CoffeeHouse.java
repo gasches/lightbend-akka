@@ -16,7 +16,7 @@ public class CoffeeHouse extends AbstractLoggingActor {
     @Override
     public Receive createReceive() {
         return receiveBuilder()
-                .matchAny(msg -> log().info("Coffee Brewing"))
+                .matchAny(msg -> sender().tell("Coffee Brewing", self()))
                 .build();
     }
 }
