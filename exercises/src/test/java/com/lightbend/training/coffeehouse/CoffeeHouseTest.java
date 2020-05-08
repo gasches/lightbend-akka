@@ -14,10 +14,16 @@ public class CoffeeHouseTest extends BaseAkkaTest {
                 .intercept(Functions.wrap(() -> system.actorOf(CoffeeHouse.props())), system);
     }
 
+    @Test(description = "Creating CoffeeHouse result in creating a child actor with the name 'waiter'")
+    public void testWaiterCreated() {
+        system.actorOf(CoffeeHouse.props(), "create-waiter");
+        expectActor(TestProbe.apply(system), "/user/create-waiter/waiter");
+    }
+
     @Test(description = "Sending CreateGuest to CoffeeHouse should result in creating a Guest")
     public void testCreateGuest() {
-        ActorRef coffeeHouse = system.actorOf(CoffeeHouse.props());
-        coffeeHouse.tell(CoffeeHouse.CreateGuest.INSTANCE, coffeeHouse);
+        ActorRef coffeeHouse = system.actorOf(CoffeeHouse.props(), "create-guest");
+        coffeeHouse.tell(new CoffeeHouse.CreateGuest(Coffee.AKKACCINO), coffeeHouse);
         expectActor(TestProbe.apply(system), "/user/create-guest/$*");
     }
 }

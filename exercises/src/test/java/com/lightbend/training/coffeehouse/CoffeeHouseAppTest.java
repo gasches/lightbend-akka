@@ -5,6 +5,7 @@ import java.util.Map;
 import org.testng.annotations.Test;
 
 import akka.testkit.TestProbe;
+import scala.collection.immutable.Seq;
 
 import static org.testng.Assert.assertEquals;
 
@@ -27,5 +28,14 @@ public class CoffeeHouseAppTest extends BaseAkkaTest {
     public void testActorCreation() {
         new CoffeeHouseApp(system, CoffeeHouseApp::createCoffeeHouse);
         expectActor(TestProbe.apply(system), "/user/coffee-house");
+    }
+
+    @Test(description = "Calling createGuest should result in sending CreateGuest to CoffeeHouse count number of times")
+    public void testCreateGuest() {
+        TestProbe probe = TestProbe.apply(system);
+        CoffeeHouseApp coffeeHouseApp = new CoffeeHouseApp(system, s -> probe.ref());
+        coffeeHouseApp.createGuest(2, Coffee.AKKACCINO, Integer.MAX_VALUE);
+        assertEquals(probe.receiveN(2),
+                Seq.fill(2, Functions.wrap(() -> new CoffeeHouse.CreateGuest(Coffee.AKKACCINO))));
     }
 }
