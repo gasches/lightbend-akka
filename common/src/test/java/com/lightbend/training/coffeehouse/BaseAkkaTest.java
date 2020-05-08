@@ -12,13 +12,13 @@ import akka.actor.ActorIdentity;
 import akka.actor.ActorRef;
 import akka.actor.ActorSystem;
 import akka.actor.Identify;
+import akka.japi.JavaPartialFunction;
 import akka.testkit.EventFilter;
 import akka.testkit.TestEvent;
 import akka.testkit.TestProbe;
 import scala.concurrent.duration.Duration;
 import scala.concurrent.duration.FiniteDuration;
 import scala.runtime.AbstractFunction0;
-import scala.runtime.AbstractPartialFunction;
 
 public abstract class BaseAkkaTest {
 
@@ -60,21 +60,20 @@ public abstract class BaseAkkaTest {
                     public Void apply() {
                         probe.system().actorSelection(path).tell(new Identify(path), probe.ref());
                         probe.expectMsgPF(Duration.create(100, TimeUnit.MILLISECONDS), "",
-                                new AbstractPartialFunction<Object, Void>() {
+                                new JavaPartialFunction<Object, Void>() {
                                     @Override
-                                    public Void apply(Object identity) {
-                                        ((ActorIdentity) identity).getActorRef().ifPresent(actor::set);
-                                        return null;
-                                    }
-
-                                    @Override
-                                    public boolean isDefinedAt(Object o) {
+                                    public Void apply(Object o, boolean isCheck) {
                                         if (o instanceof ActorIdentity) {
+                                            if (isCheck) {
+                                                return null;
+                                            }
                                             ActorIdentity identity = (ActorIdentity) o;
-                                            return path.equals(identity.correlationId()) &&
-                                                    identity.getActorRef().isPresent();
+                                            if (path.equals(identity.correlationId())) {
+                                                identity.getActorRef().ifPresent(actor::set);
+                                            }
+                                            return null;
                                         }
-                                        return false;
+                                        throw noMatch();
                                     }
                                 });
                         return null;

@@ -1,6 +1,7 @@
 package com.lightbend.training.coffeehouse;
 
 import akka.actor.AbstractLoggingActor;
+import akka.actor.ActorRef;
 import akka.actor.Props;
 
 public class CoffeeHouse extends AbstractLoggingActor {
@@ -16,7 +17,15 @@ public class CoffeeHouse extends AbstractLoggingActor {
     @Override
     public Receive createReceive() {
         return receiveBuilder()
-                .matchAny(msg -> sender().tell("Coffee Brewing", self()))
+                .matchEquals(CreateGuest.INSTANCE, msg -> createGuest())
                 .build();
+    }
+
+    protected ActorRef createGuest() {
+        return context().actorOf(Guest.props());
+    }
+
+    public enum CreateGuest {
+        INSTANCE
     }
 }

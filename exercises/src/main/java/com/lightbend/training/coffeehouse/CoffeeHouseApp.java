@@ -10,10 +10,8 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
-import akka.actor.AbstractLoggingActor;
 import akka.actor.ActorRef;
 import akka.actor.ActorSystem;
-import akka.actor.Props;
 import akka.event.Logging;
 import akka.event.LoggingAdapter;
 import lombok.SneakyThrows;
@@ -54,7 +52,6 @@ public class CoffeeHouseApp implements Runnable {
         this.system = system;
         this.log = Logging.getLogger(system, getClass().getName());
         this.coffeeHouse = coffeeHouseCreator.apply(system);
-        system.actorOf(Props.create(AnonymousActor.class, () -> new AnonymousActor(coffeeHouse)));
     }
 
     @Override
@@ -85,20 +82,11 @@ public class CoffeeHouseApp implements Runnable {
     }
 
     protected void createGuest(int count, Coffee coffee, int caffeineLimit) {
+        for (int i = 0; i < count; i++) {
+            coffeeHouse.tell(CoffeeHouse.CreateGuest.INSTANCE, coffeeHouse);
+        }
     }
 
     protected void status() {
-    }
-
-    public static class AnonymousActor extends AbstractLoggingActor {
-
-        public AnonymousActor(ActorRef coffeeHouse) {
-            coffeeHouse.tell("Brew Coffee", self());
-        }
-
-        @Override
-        public Receive createReceive() {
-            return receiveBuilder().matchAny(msg -> log().info(msg.toString())).build();
-        }
     }
 }
