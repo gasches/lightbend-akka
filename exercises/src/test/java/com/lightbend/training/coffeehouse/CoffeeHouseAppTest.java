@@ -5,6 +5,7 @@ import java.util.Map;
 import org.testng.annotations.Test;
 
 import akka.testkit.TestProbe;
+import scala.reflect.ClassTag;
 
 import static org.testng.Assert.assertEquals;
 
@@ -27,5 +28,12 @@ public class CoffeeHouseAppTest extends BaseAkkaTest {
     public void testActorCreation() {
         new CoffeeHouseApp(system, CoffeeHouseApp::createCoffeeHouse);
         expectActor(new TestProbe(system), "/user/coffee-house");
+    }
+
+    @Test(description = "Creating CoffeeHouseApp result in sending a message to CoffeeHouse")
+    public void testSendingMessageOnActorCreation() {
+        TestProbe coffeeHouse = new TestProbe(system);
+        new CoffeeHouseApp(system, s -> coffeeHouse.ref());
+        coffeeHouse.expectMsgType(ClassTag.Any());
     }
 }

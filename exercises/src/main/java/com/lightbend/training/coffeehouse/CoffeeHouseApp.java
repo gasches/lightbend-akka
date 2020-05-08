@@ -52,6 +52,8 @@ public class CoffeeHouseApp implements Runnable {
         this.system = system;
         this.log = Logging.getLogger(system, getClass().getName());
         this.coffeeHouse = coffeeHouseCreator.apply(system);
+
+        coffeeHouse.tell("Brew Coffee", ActorRef.noSender());
     }
 
     @Override
