@@ -7,12 +7,12 @@ import akka.testkit.TestProbe;
 
 public class WaterTest extends BaseAkkaTest {
 
-    @Test(description = "Sending ServeCoffee to Waiter should result in sending a CoffeeServed response to sender")
+    @Test(description = "Sending ServeCoffee to Waiter should result in sending ApproveCoffee to CoffeeHouse")
     public void testResponseCoffeeServedOnServeCoffee() {
-        TestProbe barista = TestProbe.apply(system);
+        TestProbe coffeeHouse = TestProbe.apply(system);
         TestProbe guest = TestProbe.apply(system);
-        ActorRef waiter = system.actorOf(Waiter.props(barista.ref()));
+        ActorRef waiter = system.actorOf(Waiter.props(coffeeHouse.ref()));
         waiter.tell(new Waiter.ServeCoffee(Coffee.AKKACCINO), guest.ref());
-        barista.expectMsg(new Barista.PrepareCoffee(Coffee.AKKACCINO, guest.ref()));
+        coffeeHouse.expectMsg(new CoffeeHouse.ApproveCoffee(Coffee.AKKACCINO, guest.ref()));
     }
 }

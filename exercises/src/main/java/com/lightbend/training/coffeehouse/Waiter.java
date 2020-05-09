@@ -9,17 +9,17 @@ import lombok.Value;
 @RequiredArgsConstructor
 public class Waiter extends AbstractLoggingActor {
 
-    public static Props props(ActorRef barista) {
-        return Props.create(Waiter.class, () -> new Waiter(barista));
+    public static Props props(ActorRef coffeeHouse) {
+        return Props.create(Waiter.class, () -> new Waiter(coffeeHouse));
     }
 
-    private final ActorRef barista;
+    private final ActorRef coffeeHouse;
 
     @Override
     public Receive createReceive() {
         return receiveBuilder()
                 .match(ServeCoffee.class, msg ->
-                        barista.tell(new Barista.PrepareCoffee(msg.getCoffee(), sender()), self()))
+                        coffeeHouse.tell(new CoffeeHouse.ApproveCoffee(msg.getCoffee(), sender()), self()))
                 .match(Barista.CoffeePrepared.class, msg ->
                         msg.getGuest().tell(new CoffeeServed(msg.getCoffee()), self()))
                 .build();

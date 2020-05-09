@@ -41,7 +41,8 @@ public class CoffeeHouseApp implements Runnable {
     }
 
     static ActorRef createCoffeeHouse(ActorSystem system) {
-        return system.actorOf(CoffeeHouse.props(), "coffee-house");
+        int caffeineLimit = system.settings().config().getInt("coffee-house.caffeine-limit");
+        return system.actorOf(CoffeeHouse.props(caffeineLimit), "coffee-house");
     }
 
     private final ActorSystem system;

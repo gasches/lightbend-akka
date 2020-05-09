@@ -42,6 +42,12 @@ public class Guest extends AbstractActorWithTimers {
         //@formatter:on
     }
 
+    @Override
+    public void postStop() throws Exception {
+        log.info("Goodbye!");
+        super.postStop();
+    }
+
     private void orderFavoriteCoffee() {
         waiter.tell(new Waiter.ServeCoffee(favoriteCoffee), self());
     }
