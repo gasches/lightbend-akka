@@ -23,7 +23,7 @@ public class CoffeeHouseApp implements Runnable {
         Map<String, String> opts = argsToOpts(args);
         applySystemProperties(opts);
         String name = opts.getOrDefault("name", "coffee-house");
-        ActorSystem system = ActorSystem.create(name);
+        ActorSystem system = ActorSystem.create(name + "-system");
         new CoffeeHouseApp(system, CoffeeHouseApp::createCoffeeHouse).run();
     }
 
