@@ -7,6 +7,7 @@ import java.util.concurrent.TimeUnit;
 import akka.actor.AbstractLoggingActor;
 import akka.actor.ActorRef;
 import akka.actor.Props;
+import akka.actor.Terminated;
 import lombok.Value;
 import scala.concurrent.duration.Duration;
 import scala.concurrent.duration.FiniteDuration;
@@ -45,6 +46,7 @@ public class CoffeeHouse extends AbstractLoggingActor {
                     ActorRef guest = createGuest(msg.getFavoriteCoffee());
                     guestBook.put(guest, 0);
                     log().info("Guest {} added to guest book.", guest);
+                    context().watch(guest);
                 }).match(ApproveCoffee.class,
                         msg -> guestBook.getOrDefault(msg.getGuest(), 0) < caffeineLimit,
                         msg -> {
@@ -54,6 +56,9 @@ public class CoffeeHouse extends AbstractLoggingActor {
                 }).match(ApproveCoffee.class, msg -> {
                     log().info("Sorry, {}, but you have reached your limit.", msg.getGuest());
                     context().stop(msg.getGuest());
+                }).match(Terminated.class, msg -> {
+                    log().info("Thanks, {}, for being our guest!", msg.actor());
+                    guestBook.remove(msg.actor());
                 }).build();
     }
 
