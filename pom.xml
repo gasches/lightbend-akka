@@ -31,6 +31,11 @@
                 <scope>provided</scope>
             </dependency>
             <dependency>
+                <groupId>org.scala-lang</groupId>
+                <artifactId>scala-library</artifactId>
+                <version>2.13.1</version>
+            </dependency>
+            <dependency>
                 <groupId>com.typesafe.akka</groupId>
                 <artifactId>akka-actor_${akka.binary}</artifactId>
                 <version>${akka.version}</version>

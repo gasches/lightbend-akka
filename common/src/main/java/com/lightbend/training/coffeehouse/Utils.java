@@ -1,7 +1,8 @@
 package com.lightbend.training.coffeehouse;
 
 import java.math.BigDecimal;
-import java.time.Duration;
+
+import scala.concurrent.duration.Duration;
 
 public final class Utils {
 
@@ -9,7 +10,7 @@ public final class Utils {
     }
 
     public static void busy(Duration duration) {
-        pi(System.nanoTime() + duration.getNano());
+        pi(System.nanoTime() + duration.toNanos());
     }
 
     private static BigDecimal pi(long endNanos) {

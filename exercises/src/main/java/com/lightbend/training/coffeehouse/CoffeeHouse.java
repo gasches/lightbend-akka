@@ -15,15 +15,21 @@ public class CoffeeHouse extends AbstractLoggingActor {
         return Props.create(CoffeeHouse.class, CoffeeHouse::new);
     }
 
+    private final ActorRef barista;
     private final ActorRef waiter;
+    private final FiniteDuration baristaPrepareCoffeeDuration;
     private final FiniteDuration guestFinishCoffeeDuration;
 
     public CoffeeHouse() {
-        log().debug("CoffeeHouse Open");
+        this.baristaPrepareCoffeeDuration = Duration.create(context().system().settings().config()
+                        .getDuration("coffee-house.barista.prepare-coffee-duration", TimeUnit.MILLISECONDS),
+                TimeUnit.MILLISECONDS);
         this.guestFinishCoffeeDuration = Duration.create(context().system().settings().config()
                         .getDuration("coffee-house.guest.finish-coffee-duration", TimeUnit.MILLISECONDS),
                 TimeUnit.MILLISECONDS);
+        this.barista = createBarista();
         this.waiter = createWaiter();
+        log().debug("CoffeeHouse Open");
     }
 
     @Override
@@ -33,8 +39,12 @@ public class CoffeeHouse extends AbstractLoggingActor {
                 .build();
     }
 
+    protected ActorRef createBarista() {
+        return context().actorOf(Barista.props(baristaPrepareCoffeeDuration), "barista");
+    }
+
     protected ActorRef createWaiter() {
-        return context().actorOf(Waiter.props(), "waiter");
+        return context().actorOf(Waiter.props(barista), "waiter");
     }
 
     protected ActorRef createGuest(Coffee favoriteCoffee) {

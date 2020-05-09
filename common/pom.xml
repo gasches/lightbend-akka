@@ -19,6 +19,10 @@
             <scope>provided</scope>
         </dependency>
         <dependency>
+            <groupId>org.scala-lang</groupId>
+            <artifactId>scala-library</artifactId>
+        </dependency>
+        <dependency>
             <groupId>com.typesafe.akka</groupId>
             <artifactId>akka-actor_${akka.binary}</artifactId>
             <scope>test</scope>
