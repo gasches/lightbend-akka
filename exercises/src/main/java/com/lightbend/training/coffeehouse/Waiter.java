@@ -3,6 +3,7 @@ package com.lightbend.training.coffeehouse;
 import akka.actor.AbstractLoggingActor;
 import akka.actor.ActorRef;
 import akka.actor.Props;
+import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.Value;
 
@@ -27,7 +28,7 @@ public class Waiter extends AbstractLoggingActor {
                 .match(Barista.CoffeePrepared.class, msg ->
                         msg.getGuest().tell(new CoffeeServed(msg.getCoffee()), self())
                 ).match(Complaint.class, msg -> complaintCount >= maxComplaintCount, msg -> {
-                    throw new FrustratedException();
+                    throw new FrustratedException(msg.getCoffee(), sender());
                 }).match(Complaint.class, msg -> {
                     complaintCount += 1;
                     barista.tell(new Barista.PrepareCoffee(msg.getCoffee(), sender()), self());
@@ -49,9 +50,15 @@ public class Waiter extends AbstractLoggingActor {
         Coffee coffee;
     }
 
+    @Getter
     public static class FrustratedException extends IllegalStateException {
-        public FrustratedException() {
+        private final Coffee coffee;
+        private final ActorRef guest;
+
+        public FrustratedException(Coffee coffee, ActorRef guest) {
             super("Too many complaints!");
+            this.coffee = coffee;
+            this.guest = guest;
         }
     }
 }

@@ -4,6 +4,7 @@ import java.util.concurrent.TimeUnit;
 
 import org.testng.annotations.Test;
 
+import akka.actor.AbstractActor;
 import akka.actor.Actor;
 import akka.actor.ActorRef;
 import akka.actor.Props;
@@ -203,5 +204,33 @@ public class CoffeeHouseTest extends BaseAkkaTest {
         barista.watch(guest);
         guest.tell(new Waiter.CoffeeServed(Coffee.AKKACCINO), guest);
         barista.expectTerminated(guest, Duration.Undefined());
+    }
+
+    @Test(description = "On failure of Guest CoffeeHouse restart it and resend PrepareCoffee to Barista")
+    public void testResendPrepareCoffeeOnFailure() {
+        TestProbe barista = TestProbe.apply(system);
+        TestActorRef.create(system, Props.create(CoffeeHouse.class, () -> new CoffeeHouse(Integer.MAX_VALUE) {
+            @Override
+            protected ActorRef createBarista() {
+                return barista.ref();
+            }
+
+            @Override
+            protected ActorRef createWaiter() {
+                return context().actorOf(Props.create(FrustratedWaiter.class, FrustratedWaiter::new), "waiter");
+            }
+        }), "resend-prepare-coffee");
+        ActorRef waiter = expectActor(TestProbe.apply(system), "/user/resend-prepare-coffee/waiter");
+        waiter.tell("blow-up", waiter);
+        barista.expectMsg(new Barista.PrepareCoffee(Coffee.AKKACCINO, system.deadLetters()));
+    }
+
+    private static class FrustratedWaiter extends AbstractActor {
+        @Override
+        public Receive createReceive() {
+            return receiveBuilder().matchAny(msg -> {
+                throw new Waiter.FrustratedException(Coffee.AKKACCINO, context().system().deadLetters());
+            }).build();
+        }
     }
 }

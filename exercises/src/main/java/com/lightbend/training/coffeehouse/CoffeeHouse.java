@@ -58,6 +58,14 @@ public class CoffeeHouse extends AbstractLoggingActor {
                         return null;
                     }
                     return (SupervisorStrategy.Directive) SupervisorStrategy.stop();
+                } else if (ex instanceof Waiter.FrustratedException) {
+                    if (isCheck) {
+                        return null;
+                    }
+                    Waiter.FrustratedException frustratedEx = (Waiter.FrustratedException) ex;
+                    barista.forward(new Barista.PrepareCoffee(frustratedEx.getCoffee(), frustratedEx.getGuest()),
+                            context());
+                    return (SupervisorStrategy.Directive) SupervisorStrategy.restart();
                 }
                 throw noMatch();
             }
