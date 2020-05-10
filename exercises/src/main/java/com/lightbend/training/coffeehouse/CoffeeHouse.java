@@ -6,9 +6,13 @@ import java.util.concurrent.TimeUnit;
 
 import akka.actor.AbstractLoggingActor;
 import akka.actor.ActorRef;
+import akka.actor.OneForOneStrategy;
 import akka.actor.Props;
+import akka.actor.SupervisorStrategy;
 import akka.actor.Terminated;
+import akka.japi.JavaPartialFunction;
 import lombok.Value;
+import scala.PartialFunction;
 import scala.concurrent.duration.Duration;
 import scala.concurrent.duration.FiniteDuration;
 
@@ -37,6 +41,30 @@ public class CoffeeHouse extends AbstractLoggingActor {
         this.barista = createBarista();
         this.waiter = createWaiter();
         log().debug("CoffeeHouse Open");
+    }
+
+    @Override
+    public final SupervisorStrategy supervisorStrategy() {
+        PartialFunction<Throwable, SupervisorStrategy.Directive> decider = new JavaPartialFunction<>() {
+            @Override
+            public SupervisorStrategy.Directive apply(Throwable ex, boolean isCheck) {
+                if (ex instanceof Guest.CaffeineException) {
+                    if (isCheck) {
+                        return null;
+                    }
+                    return (SupervisorStrategy.Directive) SupervisorStrategy.stop();
+                }
+                throw noMatch();
+            }
+        };
+        SupervisorStrategy baseSupervisorStrategy = super.supervisorStrategy();
+        return OneForOneStrategy.apply(-1, Duration.Inf(), baseSupervisorStrategy.loggingEnabled(),
+                decider.orElse(new JavaPartialFunction<>() {
+                    @Override
+                    public SupervisorStrategy.Directive apply(Throwable ex, boolean isCheck) {
+                        return baseSupervisorStrategy.decider().apply(ex);
+                    }
+                }));
     }
 
     @Override

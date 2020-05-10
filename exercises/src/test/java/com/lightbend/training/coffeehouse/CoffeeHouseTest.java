@@ -173,4 +173,35 @@ public class CoffeeHouseTest extends BaseAkkaTest {
                     coffeeHouse.tell(new CoffeeHouse.ApproveCoffee(Coffee.AKKACCINO, guest), coffeeHouse);
                 }), system);
     }
+
+    @Test(description = "On failure of Guest CoffeeHouse should stop it")
+    public void testStopGuestOnFailure() {
+        TestProbe barista = TestProbe.apply(system);
+        TestActorRef<Actor> coffeeHouse =
+                TestActorRef.create(system, Props.create(CoffeeHouse.class, () -> new CoffeeHouse(Integer.MAX_VALUE) {
+                    @Override
+                    protected ActorRef createBarista() {
+                        return barista.ref();
+                    }
+                }));
+        coffeeHouse.tell(new CoffeeHouse.CreateGuest(Coffee.AKKACCINO, 0), coffeeHouse);
+        ActorRef guest = barista.expectMsgPF(Duration.Undefined(), "", new JavaPartialFunction<>() {
+            @Override
+            public ActorRef apply(Object o, boolean isCheck) {
+                if (o instanceof Barista.PrepareCoffee) {
+                    Barista.PrepareCoffee msg = (Barista.PrepareCoffee) o;
+                    if (msg.getCoffee() == Coffee.AKKACCINO) {
+                        if (isCheck) {
+                            return null;
+                        }
+                        return msg.getGuest();
+                    }
+                }
+                throw noMatch();
+            }
+        });
+        barista.watch(guest);
+        guest.tell(new Waiter.CoffeeServed(Coffee.AKKACCINO), guest);
+        barista.expectTerminated(guest, Duration.Undefined());
+    }
 }
