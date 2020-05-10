@@ -37,7 +37,7 @@ public class CoffeeHouseTest extends BaseAkkaTest {
     @Test(description = "Sending CreateGuest to CoffeeHouse should result in creating a Guest")
     public void testCreateGuestResultsInCreatingGuest() {
         ActorRef coffeeHouse = system.actorOf(CoffeeHouse.props(Integer.MAX_VALUE), "create-guest");
-        coffeeHouse.tell(new CoffeeHouse.CreateGuest(Coffee.AKKACCINO), coffeeHouse);
+        coffeeHouse.tell(new CoffeeHouse.CreateGuest(Coffee.AKKACCINO, Integer.MAX_VALUE), coffeeHouse);
         expectActor(TestProbe.apply(system), "/user/create-guest/$*");
     }
 
@@ -45,10 +45,8 @@ public class CoffeeHouseTest extends BaseAkkaTest {
     public void testCreateGuestResultsInLoggingStatus() {
         ActorRef coffeeHouse = system.actorOf(CoffeeHouse.props(Integer.MAX_VALUE), "add-to-guest-book");
         EventFilter.info(null, coffeeHouse.path().toString(), "", ".*added to guest book.*", 1)
-                .intercept(Functions.wrap(() -> {
-                    coffeeHouse.tell(new CoffeeHouse.CreateGuest(Coffee.AKKACCINO), coffeeHouse);
-                    return null;
-                }), system);
+                .intercept(Functions.wrap(() ->
+                        coffeeHouse.tell(new CoffeeHouse.CreateGuest(Coffee.AKKACCINO, Integer.MAX_VALUE), coffeeHouse)), system);
     }
 
     @Test(description = "Sending ApproveCoffee to CoffeeHouse should result in forwarding PrepareCoffee to Barista if caffeineLimit not yet reached")
@@ -86,26 +84,25 @@ public class CoffeeHouseTest extends BaseAkkaTest {
         TestProbe dummyGuest = TestProbe.apply(system);
         ActorRef coffeeHouse = system.actorOf(Props.create(CoffeeHouse.class, () -> new CoffeeHouse(Integer.MAX_VALUE) {
             @Override
-            protected ActorRef createGuest(Coffee favoriteCoffee) {
+            protected ActorRef createGuest(Coffee favoriteCoffee, int caffeineLimit) {
                 return dummyGuest.ref();
             }
         }), "caffeine-count-incremented-guest-book");
         EventFilter.info(null, coffeeHouse.path().toString(), "", ".*caffeine count incremented.*", 1)
                 .intercept(Functions.wrap(() -> {
-                    coffeeHouse.tell(new CoffeeHouse.CreateGuest(Coffee.AKKACCINO), coffeeHouse);
+                    coffeeHouse.tell(new CoffeeHouse.CreateGuest(Coffee.AKKACCINO, Integer.MAX_VALUE), coffeeHouse);
                     coffeeHouse.tell(new CoffeeHouse.ApproveCoffee(Coffee.AKKACCINO, dummyGuest.ref()), coffeeHouse);
-                    return null;
                 }), system);
     }
 
     @Test(description = "Sending ApproveCoffee to CoffeeHouse should result in logging a status message at info if caffeineLimit reached")
     public void testApproveCoffeeResultsInLoggingCaffeineLimitReached() {
         ActorRef coffeeHouse = system.actorOf(CoffeeHouse.props(0));
-        EventFilter.info(null, coffeeHouse.path().toString(), "", ".*[Ss]orry.*", 1).intercept(Functions.wrap(() -> {
-            ActorRef guest = TestProbe.apply(system).ref();
-            coffeeHouse.tell(new CoffeeHouse.ApproveCoffee(Coffee.AKKACCINO, guest), coffeeHouse);
-            return null;
-        }), system);
+        EventFilter.info(null, coffeeHouse.path().toString(), "", ".*[Ss]orry.*", 1)
+                .intercept(Functions.wrap(() -> {
+                    ActorRef guest = TestProbe.apply(system).ref();
+                    coffeeHouse.tell(new CoffeeHouse.ApproveCoffee(Coffee.AKKACCINO, guest), coffeeHouse);
+                }), system);
     }
 
     @Test(description = "Sending ApproveCoffee to CoffeeHouse should result in stopping the Guest if caffeineLimit reached")
@@ -128,7 +125,7 @@ public class CoffeeHouseTest extends BaseAkkaTest {
                         return barista.ref();
                     }
                 }));
-        coffeeHouse.tell(new CoffeeHouse.CreateGuest(Coffee.AKKACCINO), coffeeHouse);
+        coffeeHouse.tell(new CoffeeHouse.CreateGuest(Coffee.AKKACCINO, Integer.MAX_VALUE), coffeeHouse);
         ActorRef guest = barista.expectMsgPF(Duration.Undefined(), "", new JavaPartialFunction<>() {
             @Override
             public ActorRef apply(Object o, boolean isCheck) {
@@ -162,9 +159,7 @@ public class CoffeeHouseTest extends BaseAkkaTest {
                         throw noMatch();
                     }
                 });
-                return null;
             }), Duration.Undefined(), Duration.Undefined());
-            return null;
         }));
     }
 
@@ -173,10 +168,9 @@ public class CoffeeHouseTest extends BaseAkkaTest {
         ActorRef coffeeHouse = system.actorOf(CoffeeHouse.props(1), "thanks-coffee-house");
         EventFilter.info(null, coffeeHouse.path().toString(), "", ".*for being our guest.*", 1)
                 .intercept(Functions.wrap(() -> {
-                    coffeeHouse.tell(new CoffeeHouse.CreateGuest(Coffee.AKKACCINO), coffeeHouse);
+                    coffeeHouse.tell(new CoffeeHouse.CreateGuest(Coffee.AKKACCINO, Integer.MAX_VALUE), coffeeHouse);
                     ActorRef guest = expectActor(TestProbe.apply(system), "/user/thanks-coffee-house/$*");
                     coffeeHouse.tell(new CoffeeHouse.ApproveCoffee(Coffee.AKKACCINO, guest), coffeeHouse);
-                    return null;
                 }), system);
     }
 }

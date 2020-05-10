@@ -17,4 +17,14 @@ public final class Functions {
             }
         };
     }
+
+    public static AbstractFunction0<Void> wrap(Runnable action) {
+        return new AbstractFunction0<>() {
+            @Override
+            public Void apply() {
+                action.run();
+                return null;
+            }
+        };
+    }
 }

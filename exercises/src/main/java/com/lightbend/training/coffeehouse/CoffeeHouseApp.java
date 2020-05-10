@@ -84,7 +84,7 @@ public class CoffeeHouseApp implements Runnable {
 
     protected void createGuest(int count, Coffee coffee, int caffeineLimit) {
         for (int i = 0; i < count; i++) {
-            coffeeHouse.tell(new CoffeeHouse.CreateGuest(coffee), coffeeHouse);
+            coffeeHouse.tell(new CoffeeHouse.CreateGuest(coffee, caffeineLimit), coffeeHouse);
         }
     }
 

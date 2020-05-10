@@ -43,7 +43,7 @@ public class CoffeeHouse extends AbstractLoggingActor {
     public Receive createReceive() {
         return receiveBuilder()
                 .match(CreateGuest.class, msg -> {
-                    ActorRef guest = createGuest(msg.getFavoriteCoffee());
+                    ActorRef guest = createGuest(msg.getFavoriteCoffee(), msg.getCaffeineLimit());
                     guestBook.put(guest, 0);
                     log().info("Guest {} added to guest book.", guest);
                     context().watch(guest);
@@ -70,13 +70,14 @@ public class CoffeeHouse extends AbstractLoggingActor {
         return context().actorOf(Waiter.props(self()), "waiter");
     }
 
-    protected ActorRef createGuest(Coffee favoriteCoffee) {
-        return context().actorOf(Guest.props(waiter, favoriteCoffee, guestFinishCoffeeDuration));
+    protected ActorRef createGuest(Coffee favoriteCoffee, int caffeineLimit) {
+        return context().actorOf(Guest.props(waiter, favoriteCoffee, guestFinishCoffeeDuration, caffeineLimit));
     }
 
     @Value
     public static class CreateGuest {
         Coffee favoriteCoffee;
+        int caffeineLimit;
     }
 
     @Value

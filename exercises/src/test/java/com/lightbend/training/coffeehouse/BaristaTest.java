@@ -19,7 +19,6 @@ public class BaristaTest extends BaseAkkaTest {
                 FiniteDuration.apply(1000, TimeUnit.MILLISECONDS), Functions.wrap(() -> {
                     barista.tell(new Barista.PrepareCoffee(Coffee.AKKACCINO, system.deadLetters()), sender.ref());
                     sender.expectMsg(new Barista.CoffeePrepared(Coffee.AKKACCINO, system.deadLetters()));
-                    return null;
                 }));
     }
 }

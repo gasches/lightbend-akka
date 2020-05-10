@@ -36,6 +36,6 @@ public class CoffeeHouseAppTest extends BaseAkkaTest {
         CoffeeHouseApp coffeeHouseApp = new CoffeeHouseApp(system, s -> probe.ref());
         coffeeHouseApp.createGuest(2, Coffee.AKKACCINO, Integer.MAX_VALUE);
         assertEquals(probe.receiveN(2),
-                Seq.fill(2, Functions.wrap(() -> new CoffeeHouse.CreateGuest(Coffee.AKKACCINO))));
+                Seq.fill(2, Functions.wrap(() -> new CoffeeHouse.CreateGuest(Coffee.AKKACCINO, Integer.MAX_VALUE))));
     }
 }
