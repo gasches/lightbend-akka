@@ -1,6 +1,6 @@
 ## Description
 
-Lightbend Akka for Scala - Professional in Java
+[Lightbend Akka for Scala - Professional](https://academy.lightbend.com/courses/course-v1:lightbend+LAS-P+v1/course/) in Java
 
 ## To Run
 
