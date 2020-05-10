@@ -24,20 +24,25 @@ public class CoffeeHouse extends AbstractLoggingActor {
 
     private final ActorRef barista;
     private final ActorRef waiter;
+    private final int baristaAccuracy;
     private final FiniteDuration baristaPrepareCoffeeDuration;
     private final FiniteDuration guestFinishCoffeeDuration;
+    private final int waiterMaxComplaintCount;
     private final int caffeineLimit;
 
     private final Map<ActorRef, Integer> guestBook = new HashMap<>();
 
     public CoffeeHouse(int caffeineLimit) {
         this.caffeineLimit = caffeineLimit;
+        this.baristaAccuracy = context().system().settings().config().getInt("coffee-house.barista.accuracy");
         this.baristaPrepareCoffeeDuration = Duration.create(context().system().settings().config()
                         .getDuration("coffee-house.barista.prepare-coffee-duration", TimeUnit.MILLISECONDS),
                 TimeUnit.MILLISECONDS);
         this.guestFinishCoffeeDuration = Duration.create(context().system().settings().config()
                         .getDuration("coffee-house.guest.finish-coffee-duration", TimeUnit.MILLISECONDS),
                 TimeUnit.MILLISECONDS);
+        this.waiterMaxComplaintCount =
+                context().system().settings().config().getInt("coffee-house.waiter.max-complaint-count");
         this.barista = createBarista();
         this.waiter = createWaiter();
         log().debug("CoffeeHouse Open");
@@ -91,11 +96,11 @@ public class CoffeeHouse extends AbstractLoggingActor {
     }
 
     protected ActorRef createBarista() {
-        return context().actorOf(Barista.props(baristaPrepareCoffeeDuration), "barista");
+        return context().actorOf(Barista.props(baristaPrepareCoffeeDuration, baristaAccuracy), "barista");
     }
 
     protected ActorRef createWaiter() {
-        return context().actorOf(Waiter.props(self()), "waiter");
+        return context().actorOf(Waiter.props(self(), barista, waiterMaxComplaintCount), "waiter");
     }
 
     protected ActorRef createGuest(Coffee favoriteCoffee, int caffeineLimit) {

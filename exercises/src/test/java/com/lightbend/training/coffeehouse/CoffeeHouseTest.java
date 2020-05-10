@@ -72,7 +72,7 @@ public class CoffeeHouseTest extends BaseAkkaTest {
                 TestActorRef.create(system, Props.create(CoffeeHouse.class, () -> new CoffeeHouse(Integer.MAX_VALUE) {
                     @Override
                     protected ActorRef createBarista() {
-                        return context().actorOf(Barista.props(FiniteDuration.Zero()), "barista");
+                        return context().actorOf(Barista.props(FiniteDuration.Zero(), 100), "barista");
                     }
                 }));
         coffeeHouse.tell(new CoffeeHouse.ApproveCoffee(Coffee.AKKACCINO, dummyGuest), dummyWaiter.ref());

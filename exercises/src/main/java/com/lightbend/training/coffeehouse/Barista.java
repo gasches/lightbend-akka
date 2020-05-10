@@ -1,5 +1,7 @@
 package com.lightbend.training.coffeehouse;
 
+import java.util.concurrent.ThreadLocalRandom;
+
 import akka.actor.AbstractLoggingActor;
 import akka.actor.ActorRef;
 import akka.actor.Props;
@@ -10,19 +12,27 @@ import scala.concurrent.duration.FiniteDuration;
 @RequiredArgsConstructor
 public class Barista extends AbstractLoggingActor {
 
-    public static Props props(FiniteDuration prepareCoffeeDuration) {
-        return Props.create(Barista.class, () -> new Barista(prepareCoffeeDuration));
+    public static Props props(FiniteDuration prepareCoffeeDuration, int accuracy) {
+        return Props.create(Barista.class, () -> new Barista(prepareCoffeeDuration, accuracy));
     }
 
     private final FiniteDuration prepareCoffeeDuration;
+    private final int accuracy;
 
     @Override
     public Receive createReceive() {
         return receiveBuilder()
                 .match(PrepareCoffee.class, msg -> {
                     Utils.busy(prepareCoffeeDuration);
-                    sender().tell(new CoffeePrepared(msg.getCoffee(), msg.getGuest()), self());
+                    sender().tell(new CoffeePrepared(pickCoffee(msg.getCoffee()), msg.getGuest()), self());
         }).build();
+    }
+
+    private Coffee pickCoffee(Coffee coffee) {
+        if (ThreadLocalRandom.current().nextInt(100) < accuracy) {
+            return coffee;
+        }
+        return Coffee.anyOther(coffee);
     }
 
     @Value

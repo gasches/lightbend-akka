@@ -36,13 +36,16 @@ public class Guest extends AbstractActorWithTimers {
     public Receive createReceive() {
         //@formatter:off
         return receiveBuilder()
-                .match(Waiter.CoffeeServed.class, msg -> {
+                .match(Waiter.CoffeeServed.class, msg -> msg.getCoffee() == favoriteCoffee, msg -> {
                     coffeeCount += 1;
                     log.info("Enjoying my {} yummy {}!", coffeeCount, msg.getCoffee());
                     timers().startSingleTimer("coffee-finished", CoffeeFinished.INSTANCE, finishCoffeeDuration);
-                }).matchEquals(CoffeeFinished.INSTANCE, msg -> coffeeCount > caffeineLimit,
-                        msg -> { throw new CaffeineException(); }
-                ).matchEquals(CoffeeFinished.INSTANCE, msg -> orderFavoriteCoffee())
+                }).match(Waiter.CoffeeServed.class, msg -> {
+                    log.info("Expected a {}, but got a {}!", favoriteCoffee, msg.getCoffee());
+                    waiter.tell(new Waiter.Complaint(favoriteCoffee), self());
+                }).matchEquals(CoffeeFinished.INSTANCE, msg -> coffeeCount >= caffeineLimit, msg -> {
+                    throw new CaffeineException();
+                }).matchEquals(CoffeeFinished.INSTANCE, msg -> orderFavoriteCoffee())
                 .build();
         //@formatter:on
     }
