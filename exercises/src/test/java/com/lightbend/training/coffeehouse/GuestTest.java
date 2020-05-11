@@ -35,6 +35,14 @@ public class GuestTest extends BaseAkkaTest {
                 }));
     }
 
+    @Test(description = "Sending CoffeeServed to Guest should result in sending Complaint to Waiter for a wrong coffee")
+    public void testCoffeeServedResultsInComplaintToWaiter() {
+        TestProbe waiter = TestProbe.apply(system);
+        ActorRef guest = createGuest(waiter);
+        guest.tell(new Waiter.CoffeeServed(Coffee.MOCHA_PLAY), guest);
+        waiter.expectMsg(new Waiter.Complaint(Coffee.AKKACCINO));
+    }
+
     @Test(description = "Sending CoffeeFinished to Guest should result in sending ServeCoffee to Waiter")
     public void testCoffeeFinishedResultInServeCoffee() {
         TestProbe waiter = TestProbe.apply(system);

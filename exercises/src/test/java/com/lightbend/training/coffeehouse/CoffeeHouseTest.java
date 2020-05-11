@@ -1,14 +1,10 @@
 package com.lightbend.training.coffeehouse;
 
-import java.util.concurrent.TimeUnit;
-
 import org.testng.annotations.Test;
 
 import akka.actor.AbstractActor;
-import akka.actor.Actor;
 import akka.actor.ActorRef;
 import akka.actor.Props;
-import akka.japi.JavaPartialFunction;
 import akka.testkit.EventFilter;
 import akka.testkit.TestActorRef;
 import akka.testkit.TestProbe;
@@ -20,7 +16,8 @@ public class CoffeeHouseTest extends BaseAkkaTest {
     @Test(description = "Creating CoffeeHouse result in logging a status message at debug")
     public void testCreatingCoffeeHouse() {
         EventFilter.debug(null, null, "", ".*[Oo]pen.*", 1)
-                .intercept(Functions.wrap(() -> system.actorOf(CoffeeHouse.props(Integer.MAX_VALUE))), system);
+                .intercept(Functions.wrap(() -> system.actorOf(CoffeeHouse.props(Integer.MAX_VALUE), "coffee-house")),
+                        system);
     }
 
     @Test(description = "Creating CoffeeHouse result in creating a child actor with the name 'barista'")
@@ -59,9 +56,11 @@ public class CoffeeHouseTest extends BaseAkkaTest {
                     protected ActorRef createBarista() {
                         return barista.ref();
                     }
-                }));
-        coffeeHouse.tell(new CoffeeHouse.ApproveCoffee(Coffee.AKKACCINO, system.deadLetters()), coffeeHouse);
-        barista.expectMsg(new Barista.PrepareCoffee(Coffee.AKKACCINO, system.deadLetters()));
+                }), "prepare-coffee");
+        coffeeHouse.tell(new CoffeeHouse.CreateGuest(Coffee.AKKACCINO, Integer.MAX_VALUE), coffeeHouse);
+        ActorRef guest = expectActor(TestProbe.apply(system), "/user/prepare-coffee/$*");
+        coffeeHouse.tell(new CoffeeHouse.ApproveCoffee(Coffee.AKKACCINO, guest), coffeeHouse);
+        barista.expectMsg(new Barista.PrepareCoffee(Coffee.AKKACCINO, guest));
     }
 
     @Test(description = "Sending ApproveCoffee to CoffeeHouse should result in Barista sending a CoffeePrepared to Waiter if caffeineLimit not yet reached")
@@ -98,7 +97,7 @@ public class CoffeeHouseTest extends BaseAkkaTest {
 
     @Test(description = "Sending ApproveCoffee to CoffeeHouse should result in logging a status message at info if caffeineLimit reached")
     public void testApproveCoffeeResultsInLoggingCaffeineLimitReached() {
-        ActorRef coffeeHouse = system.actorOf(CoffeeHouse.props(0));
+        ActorRef coffeeHouse = system.actorOf(CoffeeHouse.props(0), "caffeine-limit");
         EventFilter.info(null, coffeeHouse.path().toString(), "", ".*[Ss]orry.*", 1)
                 .intercept(Functions.wrap(() -> {
                     ActorRef guest = TestProbe.apply(system).ref();
@@ -111,57 +110,9 @@ public class CoffeeHouseTest extends BaseAkkaTest {
         TestProbe probe = TestProbe.apply(system);
         ActorRef guest = TestProbe.apply(system).ref();
         probe.watch(guest);
-        ActorRef coffeeHouse = system.actorOf(CoffeeHouse.props(0));
+        ActorRef coffeeHouse = system.actorOf(CoffeeHouse.props(0), "guest-terminated");
         coffeeHouse.tell(new CoffeeHouse.ApproveCoffee(Coffee.AKKACCINO, guest), coffeeHouse);
         probe.expectTerminated(guest, Duration.Undefined());
-    }
-
-    @Test(description = "On termination of Guest, CoffeeHouse should remove the guest from the guest book")
-    public void testRemoveGuestFromBookOnTermination() {
-        TestProbe barista = TestProbe.apply(system);
-        TestActorRef<Actor> coffeeHouse =
-                TestActorRef.create(system, Props.create(CoffeeHouse.class, () -> new CoffeeHouse(Integer.MAX_VALUE) {
-                    @Override
-                    protected ActorRef createBarista() {
-                        return barista.ref();
-                    }
-                }));
-        coffeeHouse.tell(new CoffeeHouse.CreateGuest(Coffee.AKKACCINO, Integer.MAX_VALUE), coffeeHouse);
-        ActorRef guest = barista.expectMsgPF(Duration.Undefined(), "", new JavaPartialFunction<>() {
-            @Override
-            public ActorRef apply(Object o, boolean isCheck) {
-                if (o instanceof Barista.PrepareCoffee) {
-                    Barista.PrepareCoffee msg = (Barista.PrepareCoffee) o;
-                    if (msg.getCoffee() == Coffee.AKKACCINO) {
-                        if (isCheck) {
-                            return null;
-                        }
-                        return msg.getGuest();
-                    }
-                }
-                throw noMatch();
-            }
-        });
-        barista.watch(guest);
-        system.stop(guest);
-        barista.expectTerminated(guest, Duration.Undefined());
-        barista.within(Duration.create(2L, TimeUnit.SECONDS), Functions.wrap(() -> {
-            barista.awaitAssert(Functions.wrap(() -> {
-                coffeeHouse.tell(new CoffeeHouse.ApproveCoffee(Coffee.AKKACCINO, guest), coffeeHouse);
-                barista.expectMsgPF(Duration.create(100L, TimeUnit.MILLISECONDS), "", new JavaPartialFunction<>() {
-                    @Override
-                    public Object apply(Object o, boolean isCheck) {
-                        if (o instanceof Barista.PrepareCoffee) {
-                            Barista.PrepareCoffee msg = (Barista.PrepareCoffee) o;
-                            if (msg.getCoffee() == Coffee.AKKACCINO && msg.getGuest().equals(guest)) {
-                                return null;
-                            }
-                        }
-                        throw noMatch();
-                    }
-                });
-            }), Duration.Undefined(), Duration.Undefined());
-        }));
     }
 
     @Test(description = "On termination of Guest, CoffeeHouse should result in logging a thanks message at info")
@@ -177,33 +128,13 @@ public class CoffeeHouseTest extends BaseAkkaTest {
 
     @Test(description = "On failure of Guest CoffeeHouse should stop it")
     public void testStopGuestOnFailure() {
-        TestProbe barista = TestProbe.apply(system);
-        TestActorRef<Actor> coffeeHouse =
-                TestActorRef.create(system, Props.create(CoffeeHouse.class, () -> new CoffeeHouse(Integer.MAX_VALUE) {
-                    @Override
-                    protected ActorRef createBarista() {
-                        return barista.ref();
-                    }
-                }));
+        TestProbe probe = TestProbe.apply(system);
+        ActorRef coffeeHouse = system.actorOf(CoffeeHouse.props(1), "guest-stopped");
         coffeeHouse.tell(new CoffeeHouse.CreateGuest(Coffee.AKKACCINO, 0), coffeeHouse);
-        ActorRef guest = barista.expectMsgPF(Duration.Undefined(), "", new JavaPartialFunction<>() {
-            @Override
-            public ActorRef apply(Object o, boolean isCheck) {
-                if (o instanceof Barista.PrepareCoffee) {
-                    Barista.PrepareCoffee msg = (Barista.PrepareCoffee) o;
-                    if (msg.getCoffee() == Coffee.AKKACCINO) {
-                        if (isCheck) {
-                            return null;
-                        }
-                        return msg.getGuest();
-                    }
-                }
-                throw noMatch();
-            }
-        });
-        barista.watch(guest);
-        guest.tell(new Waiter.CoffeeServed(Coffee.AKKACCINO), guest);
-        barista.expectTerminated(guest, Duration.Undefined());
+        ActorRef guest = expectActor(TestProbe.apply(system), "/user/guest-stopped/$*");
+        probe.watch(guest);
+        coffeeHouse.tell(new CoffeeHouse.ApproveCoffee(Coffee.AKKACCINO, guest), coffeeHouse);
+        probe.expectTerminated(guest, Duration.Undefined());
     }
 
     @Test(description = "On failure of Guest CoffeeHouse restart it and resend PrepareCoffee to Barista")

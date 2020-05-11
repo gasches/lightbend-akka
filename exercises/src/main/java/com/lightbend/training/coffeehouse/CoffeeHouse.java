@@ -11,6 +11,7 @@ import akka.actor.Props;
 import akka.actor.SupervisorStrategy;
 import akka.actor.Terminated;
 import akka.japi.JavaPartialFunction;
+import akka.routing.FromConfig;
 import lombok.Value;
 import scala.PartialFunction;
 import scala.concurrent.duration.Duration;
@@ -104,7 +105,9 @@ public class CoffeeHouse extends AbstractLoggingActor {
     }
 
     protected ActorRef createBarista() {
-        return context().actorOf(Barista.props(baristaPrepareCoffeeDuration, baristaAccuracy), "barista");
+        return context()
+                .actorOf(FromConfig.getInstance().props(Barista.props(baristaPrepareCoffeeDuration, baristaAccuracy)),
+                        "barista");
     }
 
     protected ActorRef createWaiter() {
