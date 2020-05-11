@@ -23,9 +23,9 @@ public class BaristaTest extends BaseAkkaTest {
     public void testPrepareCoffeeResultsInCoffeePrepared() {
         TestProbe sender = TestProbe.apply(system);
         ActorRef barista = system.actorOf(Barista.props(FiniteDuration.apply(100, TimeUnit.MILLISECONDS), 100));
-        // busy is inaccurate, so we relax the timing constraints.
+        // The timer is not extremely accurate, so we relax the timing constraints.
         sender.within(FiniteDuration.apply(50, TimeUnit.MILLISECONDS),
-                FiniteDuration.apply(1000, TimeUnit.MILLISECONDS), Functions.wrap(() -> {
+                FiniteDuration.apply(200, TimeUnit.MILLISECONDS), Functions.wrap(() -> {
                     barista.tell(new Barista.PrepareCoffee(Coffee.AKKACCINO, system.deadLetters()), sender.ref());
                     sender.expectMsg(new Barista.CoffeePrepared(Coffee.AKKACCINO, system.deadLetters()));
                 }));
@@ -36,7 +36,7 @@ public class BaristaTest extends BaseAkkaTest {
         TestProbe waiter = TestProbe.apply(system);
         int accuracy = 50;
         int runs = 1000;
-        ActorRef barista = system.actorOf(Barista.props(FiniteDuration.create(0, TimeUnit.MILLISECONDS), accuracy));
+        ActorRef barista = system.actorOf(Barista.props(FiniteDuration.Zero(), accuracy));
         ActorRef guest = system.deadLetters();
         ArrayList<Coffee> coffees = new ArrayList<>();
         JavaPartialFunction<Object, Coffee> f = new JavaPartialFunction<>() {
