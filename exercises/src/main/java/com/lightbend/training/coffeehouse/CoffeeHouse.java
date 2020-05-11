@@ -101,7 +101,8 @@ public class CoffeeHouse extends AbstractLoggingActor {
                 }).match(Terminated.class, msg -> {
                     log().info("Thanks, {}, for being our guest!", msg.actor());
                     guestBook.remove(msg.actor());
-                }).build();
+                }).matchEquals(GetStatus.INSTANCE, msg -> sender().tell(new Status(guestBook.size()), self())
+                ).build();
     }
 
     protected ActorRef createBarista() {
@@ -128,5 +129,14 @@ public class CoffeeHouse extends AbstractLoggingActor {
     public static class ApproveCoffee {
         Coffee coffee;
         ActorRef guest;
+    }
+
+    public enum GetStatus {
+        INSTANCE
+    }
+
+    @Value
+    public static class Status {
+        int guestCount;
     }
 }

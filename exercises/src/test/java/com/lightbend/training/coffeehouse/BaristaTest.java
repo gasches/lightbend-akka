@@ -3,8 +3,6 @@ package com.lightbend.training.coffeehouse;
 import java.util.ArrayList;
 import java.util.concurrent.TimeUnit;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.testng.annotations.Test;
 
 import akka.actor.ActorRef;
@@ -16,8 +14,6 @@ import scala.concurrent.duration.FiniteDuration;
 import static org.testng.Assert.assertTrue;
 
 public class BaristaTest extends BaseAkkaTest {
-
-    private static final Logger log = LoggerFactory.getLogger(BaristaTest.class);
 
     @Test(description = "Sending PrepareCoffee to Barista should result in sending a CoffeePrepared response after prepareCoffeeDuration")
     public void testPrepareCoffeeResultsInCoffeePrepared() {

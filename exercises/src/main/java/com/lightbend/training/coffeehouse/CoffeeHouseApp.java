@@ -5,6 +5,7 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.util.Arrays;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -12,9 +13,15 @@ import java.util.stream.Collectors;
 
 import akka.actor.ActorRef;
 import akka.actor.ActorSystem;
+import akka.dispatch.OnComplete;
 import akka.event.Logging;
 import akka.event.LoggingAdapter;
+import akka.pattern.Patterns;
+import akka.util.Timeout;
 import lombok.SneakyThrows;
+import scala.concurrent.Future;
+import scala.concurrent.duration.FiniteDuration;
+import scala.reflect.ClassTag;
 
 public class CoffeeHouseApp implements Runnable {
     private static final Pattern OPT_PATTERN = Pattern.compile("(\\S+)=(\\S+)");
@@ -24,7 +31,11 @@ public class CoffeeHouseApp implements Runnable {
         applySystemProperties(opts);
         String name = opts.getOrDefault("name", "coffee-house");
         ActorSystem system = ActorSystem.create(name + "-system");
-        new CoffeeHouseApp(system, CoffeeHouseApp::createCoffeeHouse).run();
+        Timeout statusTimeout = Timeout.apply(FiniteDuration
+                .create(system.settings().config().getDuration("coffee-house.status-timeout", TimeUnit.MILLISECONDS),
+                        TimeUnit.MILLISECONDS));
+        CoffeeHouseApp coffeeHouseApp = new CoffeeHouseApp(system, statusTimeout, CoffeeHouseApp::createCoffeeHouse);
+        coffeeHouseApp.run();
     }
 
     static Map<String, String> argsToOpts(String[] args) {
@@ -46,12 +57,15 @@ public class CoffeeHouseApp implements Runnable {
     }
 
     private final ActorSystem system;
+    private final Timeout statusTimeout;
     private final LoggingAdapter log;
     private final ActorRef coffeeHouse;
 
-    public CoffeeHouseApp(ActorSystem system, Function<ActorSystem, ActorRef> coffeeHouseCreator) {
+    public CoffeeHouseApp(ActorSystem system, Timeout statusTimeout,
+            Function<ActorSystem, ActorRef> coffeeHouseCreator) {
         this.system = system;
         this.log = Logging.getLogger(system, getClass().getName());
+        this.statusTimeout = statusTimeout;
         this.coffeeHouse = coffeeHouseCreator.apply(system);
     }
 
@@ -89,5 +103,17 @@ public class CoffeeHouseApp implements Runnable {
     }
 
     protected void status() {
+        Future<CoffeeHouse.Status> future = Patterns.ask(coffeeHouse, CoffeeHouse.GetStatus.INSTANCE, statusTimeout)
+                .mapTo(ClassTag.apply(CoffeeHouse.Status.class));
+        future.onComplete(new OnComplete<>() {
+            @Override
+            public void onComplete(Throwable error, CoffeeHouse.Status status) {
+                if (status != null) {
+                    log.info("Status: guest count = {}", status.getGuestCount());
+                } else if (error != null) {
+                    log.error(error, "Can't get status!");
+                }
+            }
+        }, system.dispatcher());
     }
 }
