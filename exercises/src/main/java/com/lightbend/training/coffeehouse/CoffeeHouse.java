@@ -10,7 +10,7 @@ import akka.actor.OneForOneStrategy;
 import akka.actor.Props;
 import akka.actor.SupervisorStrategy;
 import akka.actor.Terminated;
-import akka.japi.JavaPartialFunction;
+import akka.japi.pf.DeciderBuilder;
 import akka.routing.FromConfig;
 import lombok.Value;
 import scala.PartialFunction;
@@ -51,34 +51,15 @@ public class CoffeeHouse extends AbstractLoggingActor {
 
     @Override
     public final SupervisorStrategy supervisorStrategy() {
-        PartialFunction<Throwable, SupervisorStrategy.Directive> decider = new JavaPartialFunction<>() {
-            @Override
-            public SupervisorStrategy.Directive apply(Throwable ex, boolean isCheck) {
-                if (ex instanceof Guest.CaffeineException) {
-                    if (isCheck) {
-                        return null;
-                    }
-                    return (SupervisorStrategy.Directive) SupervisorStrategy.stop();
-                } else if (ex instanceof Waiter.FrustratedException) {
-                    if (isCheck) {
-                        return null;
-                    }
-                    Waiter.FrustratedException frustratedEx = (Waiter.FrustratedException) ex;
-                    barista.forward(new Barista.PrepareCoffee(frustratedEx.getCoffee(), frustratedEx.getGuest()),
-                            context());
+        PartialFunction<Throwable, SupervisorStrategy.Directive> decider = DeciderBuilder
+                .match(Guest.CaffeineException.class, e -> (SupervisorStrategy.Directive) SupervisorStrategy.stop())
+                .match(Waiter.FrustratedException.class, e -> {
+                    barista.forward(new Barista.PrepareCoffee(e.getCoffee(), e.getGuest()), context());
                     return (SupervisorStrategy.Directive) SupervisorStrategy.restart();
-                }
-                throw noMatch();
-            }
-        };
+                }).build();
         SupervisorStrategy baseSupervisorStrategy = super.supervisorStrategy();
         return OneForOneStrategy.apply(-1, Duration.Inf(), baseSupervisorStrategy.loggingEnabled(),
-                decider.orElse(new JavaPartialFunction<>() {
-                    @Override
-                    public SupervisorStrategy.Directive apply(Throwable ex, boolean isCheck) {
-                        return baseSupervisorStrategy.decider().apply(ex);
-                    }
-                }));
+                decider.orElse(DeciderBuilder.matchAny(t -> baseSupervisorStrategy.decider().apply(t)).build()));
     }
 
     @Override

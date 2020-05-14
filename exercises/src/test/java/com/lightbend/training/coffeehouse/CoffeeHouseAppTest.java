@@ -47,7 +47,7 @@ public class CoffeeHouseAppTest extends BaseAkkaTest {
         CoffeeHouseApp coffeeHouseApp = new CoffeeHouseApp(system, statusTimeout, s -> probe.ref());
         coffeeHouseApp.createGuest(2, Coffee.AKKACCINO, Integer.MAX_VALUE);
         assertEquals(probe.receiveN(2),
-                Seq.fill(2, Functions.wrap(() -> new CoffeeHouse.CreateGuest(Coffee.AKKACCINO, Integer.MAX_VALUE))));
+                Seq.fill(2, () -> new CoffeeHouse.CreateGuest(Coffee.AKKACCINO, Integer.MAX_VALUE)));
     }
 
     @Test(description = "Calling getStatus should result in logging the AskTimeoutException at error for CoffeeHouse not responding")

@@ -12,7 +12,7 @@ import akka.actor.ActorIdentity;
 import akka.actor.ActorRef;
 import akka.actor.ActorSystem;
 import akka.actor.Identify;
-import akka.japi.JavaPartialFunction;
+import akka.japi.pf.UnitPFBuilder;
 import akka.testkit.EventFilter;
 import akka.testkit.TestEvent;
 import akka.testkit.TestProbe;
@@ -55,29 +55,12 @@ public abstract class BaseAkkaTest {
             @Override
             public ActorRef apply() {
                 AtomicReference<ActorRef> actor = new AtomicReference<>();
-                probe.awaitAssert(new AbstractFunction0<Void>() {
-                    @Override
-                    public Void apply() {
-                        probe.system().actorSelection(path).tell(new Identify(path), probe.ref());
-                        probe.expectMsgPF(Duration.create(100, TimeUnit.MILLISECONDS), "",
-                                new JavaPartialFunction<Object, Void>() {
-                                    @Override
-                                    public Void apply(Object o, boolean isCheck) {
-                                        if (o instanceof ActorIdentity) {
-                                            if (isCheck) {
-                                                return null;
-                                            }
-                                            ActorIdentity identity = (ActorIdentity) o;
-                                            if (path.equals(identity.correlationId())) {
-                                                identity.getActorRef().ifPresent(actor::set);
-                                            }
-                                            return null;
-                                        }
-                                        throw noMatch();
-                                    }
-                                });
-                        return null;
-                    }
+                probe.awaitAssert(() -> {
+                    probe.system().actorSelection(path).tell(new Identify(path), probe.ref());
+                    probe.expectMsgPF(Duration.create(100, TimeUnit.MILLISECONDS), "", new UnitPFBuilder<>()
+                            .match(ActorIdentity.class, ident -> path.equals(ident.correlationId()),
+                                    ident -> ident.getActorRef().ifPresent(actor::set)).build());
+                    return null;
                 }, Duration.Undefined(), Duration.Undefined());
                 return actor.get();
             }

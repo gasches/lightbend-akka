@@ -6,8 +6,9 @@ import java.util.concurrent.TimeUnit;
 import org.testng.annotations.Test;
 
 import akka.actor.ActorRef;
-import akka.japi.JavaPartialFunction;
+import akka.japi.pf.PFBuilder;
 import akka.testkit.TestProbe;
+import scala.PartialFunction;
 import scala.concurrent.duration.Duration;
 import scala.concurrent.duration.FiniteDuration;
 
@@ -35,21 +36,10 @@ public class BaristaTest extends BaseAkkaTest {
         ActorRef barista = system.actorOf(Barista.props(FiniteDuration.Zero(), accuracy));
         ActorRef guest = system.deadLetters();
         ArrayList<Coffee> coffees = new ArrayList<>();
-        JavaPartialFunction<Object, Coffee> f = new JavaPartialFunction<>() {
-            @Override
-            public Coffee apply(Object o, boolean isCheck) {
-                if (o instanceof Barista.CoffeePrepared) {
-                    Barista.CoffeePrepared msg = (Barista.CoffeePrepared) o;
-                    if (msg.getGuest().equals(guest)) {
-                        if (isCheck) {
-                            return null;
-                        }
-                        return msg.getCoffee();
-                    }
-                }
-                throw noMatch();
-            }
-        };
+        PartialFunction<Object, Coffee> f = new PFBuilder<Object, Coffee>()
+                .match(Barista.CoffeePrepared.class, msg -> msg.getGuest().equals(guest),
+                        Barista.CoffeePrepared::getCoffee)
+                .build();
         for (int i = 0; i < runs; i++) {
             barista.tell(new Barista.PrepareCoffee(Coffee.AKKACCINO, guest), waiter.ref());
             coffees.add(waiter.expectMsgPF(Duration.Undefined(), "", f));
